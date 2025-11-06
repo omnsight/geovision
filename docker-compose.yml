@@ -1,0 +1,40 @@
+services:
+  arangodb:
+    image: arangodb/arangodb:3.10
+    container_name: geovision_arangodb
+    environment:
+      ARANGO_ROOT_PASSWORD: "0123"
+    ports:
+      - "8529:8529"
+    volumes:
+      - arangodb_data:/var/lib/arangodb3
+    healthcheck:
+      test: "arangosh --server.endpoint http://localhost:8529 --server.username root --server.password $$ARANGO_ROOT_PASSWORD --javascript.execute-string \"db._version();\""
+      interval: 6s
+      timeout: 5s
+      retries: 3
+
+  geovision:
+    build: .
+    container_name: geovision_service
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    environment:
+      GRPC_PORT: 9090
+      SERVER_PORT: 8080
+      ARANGO_URL: http://arangodb:8529
+      ARANGO_DB: geovision
+      ARANGO_USERNAME: root
+      ARANGO_PASSWORD: "0123"
+    depends_on:
+      arangodb:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 6s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  arangodb_data:

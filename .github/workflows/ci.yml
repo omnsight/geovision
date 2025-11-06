@@ -1,0 +1,65 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test with ArangoDB
+    runs-on: ubuntu-latest
+
+    services:
+      arangodb:
+        image: arangodb/arangodb:3.10
+        env:
+          ARANGO_ROOT_PASSWORD: 0123
+        ports:
+          - 8529:8529
+        options: >-
+          --health-cmd="arangosh --server.endpoint http://localhost:8529 --server.username root --server.password $$ARANGO_ROOT_PASSWORD --javascript.execute-string \"db._version();\" || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.25.3'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Wait for ArangoDB to be ready
+        run: |
+          timeout 60 bash -c 'arangosh --server.endpoint http://localhost:8529 --server.username root --server.password $$ARANGO_ROOT_PASSWORD --javascript.execute-string \"db._version();\"; do sleep 2; done'
+
+      - name: Run tests
+        run: |
+          go test -v ./...
+        env:
+          ARANGO_URL: http://localhost:8529
+          ARANGO_DB: geovision_test
+          ARANGO_USERNAME: root
+          ARANGO_PASSWORD: test123
+
+      - name: Build service
+        run: |
+          go build -o geovision ./src/main.go
+
+      - name: Run service (10 seconds)
+        run: |
+          timeout 10s ./geovision || true
+        env:
+          GRPC_PORT: 9090
+          SERVER_PORT: 8080
+          ARANGO_URL: http://localhost:8529
+          ARANGO_DB: geovision_test
+          ARANGO_USERNAME: root
+          ARANGO_PASSWORD: test123
