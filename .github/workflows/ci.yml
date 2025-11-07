@@ -15,7 +15,7 @@ jobs:
       arangodb:
         image: arangodb/arangodb:3.10
         env:
-          ARANGO_ROOT_PASSWORD: 0123
+          ARANGO_ROOT_PASSWORD: "0123"
         ports:
           - 8529:8529
         options: >-
