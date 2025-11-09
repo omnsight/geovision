@@ -8,6 +8,8 @@ import (
 	"github.com/bouncingmaxt/geovision/src/clients"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // TestMain sets up the test environment
@@ -137,6 +139,11 @@ func TestWebsiteService(t *testing.T) {
 		_, err = service.GetWebsite(context.Background(), getReq)
 		if err == nil {
 			t.Error("Expected error when getting deleted website")
+		} else {
+			// Check that we get the expected NotFound error
+			if status.Code(err) != codes.NotFound {
+				t.Errorf("Expected NotFound error, got: %v", err)
+			}
 		}
 	})
 }

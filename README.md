@@ -23,12 +23,18 @@ Services are designed to be independent and follow the gRPC service definitions 
 
 ## How to Run Locally
 
+### Run Unit Tests
+
+```bash
+docker-compose up -d arangodb
+go test -v ./... -run <test name>
+docker-compose down
+```
+
 To run the service with ArangoDB using Docker Compose:
 
 ```bash
 docker-compose up -d
-go test -v ./...
-docker-compose down
 
 docker-compose logs arangodb
 docker inspect

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -14,6 +15,14 @@ import (
 type ArangoDBClient struct {
 	Client driver.Client
 	DB     driver.Database
+}
+
+func (adb *ArangoDBClient) ParseDocID(id string) (collectionName string, key string, err error) {
+	parts := strings.SplitN(id, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid document ID format: %s", id)
+	}
+	return parts[0], parts[1], nil
 }
 
 // NewArangoDBClient creates a new ArangoDB client and connects to the database

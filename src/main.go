@@ -2,12 +2,9 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"path"
-	"runtime"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -16,25 +13,13 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/bouncingmaxt/geovision/src/clients"
+	"github.com/bouncingmaxt/geovision/src/logging"
 	"github.com/bouncingmaxt/geovision/src/services"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 )
 
-func setupLogging() {
-	// Configure logrus to always include stack traces for errors
-	logrus.SetReportCaller(true)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return fmt.Sprintf("%s():", f.Function), fmt.Sprintf("%s:%d", filename, f.Line)
-		},
-	})
-}
-
 func main() {
-	setupLogging()
-
 	// ---- 1. Start the gRPC Server (your logic) ----
 	// Get gRPC address from environment variable or use default
 	grpcPort := os.Getenv("GRPC_PORT")
@@ -48,7 +33,9 @@ func main() {
 	}
 
 	// Create a gRPC server
-	gRPCServer := grpc.NewServer()
+	gRPCServer := grpc.NewServer(
+		grpc.UnaryInterceptor(logging.LoggingInterceptor),
+	)
 
 	// Create a new ArangoDB client
 	client, err := clients.NewArangoDBClient()
