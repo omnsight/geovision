@@ -1,8 +1,13 @@
 name: Unit Testing
 
 on:
-  - push
-  - pull_request
+  push:
+    branches:
+      - '**'
+      - '!mainline'
+  pull_request:
+    branches:
+      - 'mainline'
 
 jobs:
   test:
