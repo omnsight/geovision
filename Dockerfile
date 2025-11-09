@@ -33,13 +33,5 @@ COPY --from=builder /geovision .
 # Expose port
 EXPOSE 8080
 
-# Set environment variables with defaults
-ENV GRPC_PORT=9090
-ENV SERVER_PORT=8080
-ENV ARANGO_URL=http://localhost:8529
-ENV ARANGO_DB=geovision
-ENV ARANGO_USERNAME=root
-ENV ARANGO_PASSWORD=0123
-
 # Run the application
 CMD ["./geovision"]
