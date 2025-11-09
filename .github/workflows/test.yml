@@ -1,14 +1,9 @@
-name: CI Pipeline
+name: Unit Testing
 
-on:
-  push:
-    branches: [ mainline ]
-  pull_request:
-    branches: [ mainline ]
+on: [ push, pull_request ]
 
 jobs:
   test:
-    name: Test with Docker Compose
     runs-on: ubuntu-latest
 
     steps:
