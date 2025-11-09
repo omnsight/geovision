@@ -1,10 +1,11 @@
-name: CI Pipeline
+name: Publish Docker Image
 
 on:
-  push:
-    branches: [ mainline ]
   pull_request:
-    branches: [ mainline ]
+    types:
+      - 'closed'
+    branches:
+      - 'mainline'
 
 env:
   # Use docker.io for Docker Hub if empty
