@@ -6,8 +6,7 @@ services:
       ARANGO_ROOT_PASSWORD: "0123"
     ports:
       - "8529:8529"
-    volumes:
-      - arangodb_data:/var/lib/arangodb3
+    # Removed volumes for testing to ensure clean state
     healthcheck:
       test: "arangosh --server.endpoint http://localhost:8529 --server.username root --server.password $$ARANGO_ROOT_PASSWORD --javascript.execute-string \"db._version();\""
       interval: 6s
@@ -35,6 +34,3 @@ services:
       interval: 6s
       timeout: 5s
       retries: 3
-
-volumes:
-  arangodb_data:

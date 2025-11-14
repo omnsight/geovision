@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/arangodb/go-driver"
 	"github.com/arangodb/go-driver/http"
@@ -12,8 +13,9 @@ import (
 
 // ArangoDBClient represents a connection to ArangoDB
 type ArangoDBClient struct {
-	Client driver.Client
-	DB     driver.Database
+	Client     driver.Client
+	DB         driver.Database
+	OsintGraph driver.Graph
 }
 
 // NewArangoDBClient creates a new ArangoDB client and connects to the database
@@ -62,10 +64,27 @@ func NewArangoDBClient() (*ArangoDBClient, error) {
 		return nil, fmt.Errorf("failed to get database: %v", err)
 	}
 
-	return &ArangoDBClient{
-		Client: client,
-		DB:     db,
-	}, nil
+	ctx := context.Background()
+	osintGraph, err := CreateOrGetGraph(db, ctx, "osint", nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get osint graph: %v", err)
+	}
+
+	arangoClient := ArangoDBClient{
+		Client:     client,
+		DB:         db,
+		OsintGraph: osintGraph,
+	}
+
+	return &arangoClient, nil
+}
+
+func (adb *ArangoDBClient) ParseDocID(id string) (collectionName string, key string, err error) {
+	parts := strings.SplitN(id, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", fmt.Errorf("invalid document ID format: %s", id)
+	}
+	return parts[0], parts[1], nil
 }
 
 // GetDatabase returns the database instance
@@ -76,6 +95,52 @@ func (c *ArangoDBClient) GetDatabase() driver.Database {
 // GetClient returns the client instance
 func (c *ArangoDBClient) GetClient() driver.Client {
 	return c.Client
+}
+
+func (c *ArangoDBClient) GetCreateCollection(ctx context.Context, name string, options driver.CreateVertexCollectionOptions) (driver.Collection, error) {
+	collection, err := c.DB.Collection(ctx, name)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			collection, err = c.OsintGraph.CreateVertexCollectionWithOptions(ctx, name, options)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return collection, nil
+	} else {
+		return collection, nil
+	}
+}
+
+func (c *ArangoDBClient) GetCreateEdgeCollection(ctx context.Context, name string, constraints driver.VertexConstraints, options driver.CreateEdgeCollectionOptions) (driver.Collection, error) {
+	collection, err := c.DB.Collection(ctx, name)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			collection, err = c.OsintGraph.CreateEdgeCollectionWithOptions(ctx, name, constraints, options)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return collection, nil
+	} else {
+		return collection, nil
+	}
+}
+
+func CreateOrGetGraph(db driver.Database, ctx context.Context, name string, options *driver.CreateGraphOptions) (driver.Graph, error) {
+	graph, err := db.Graph(ctx, name)
+	if err != nil {
+		if driver.IsNotFoundGeneral(err) {
+			graph, err = db.CreateGraphV2(ctx, name, options)
+			if err != nil {
+				return nil, err
+			}
+			return graph, nil
+		}
+		return nil, err
+	} else {
+		return graph, nil
+	}
 }
 
 func createOrGetDatabase(client driver.Client, dbName string) (driver.Database, error) {
