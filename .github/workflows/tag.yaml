@@ -1,0 +1,28 @@
+name: Automatic Tagging
+
+on:
+  push:
+    branches:
+      - main
+      - pre-release
+
+jobs:
+  tag:
+    name: Create New Tag
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        uses: anothrNick/github-tag-action@1.75.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_PREFIX: v
+          PRERELEASE: true
