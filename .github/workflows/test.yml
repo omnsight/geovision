@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - '**'
-      - '!mainline'
+      - '!main'
 
 jobs:
   test:
