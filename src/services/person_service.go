@@ -9,6 +9,7 @@ import (
 	"github.com/bouncingmaxt/geovision/src/logging"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,29 +17,23 @@ import (
 type PersonService struct {
 	geovision.UnimplementedPersonServiceServer
 
-	DBClient *clients.ArangoDBClient
+	DBClient   *clients.ArangoDBClient
+	Collection driver.Collection
 }
 
 func NewPersonService(client *clients.ArangoDBClient) (*PersonService, error) {
-	service := &PersonService{
-		DBClient: client,
-	}
-
 	// Create persons collection
 	ctx := context.Background()
-	exists, err := client.DB.CollectionExists(ctx, "persons")
+	collection, err := client.GetCreateCollection(ctx, "persons", driver.CreateVertexCollectionOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to check persons collection existence: %v", err)
+		return nil, fmt.Errorf("failed to get or create persons collection: %v", err)
 	}
+	fmt.Printf("✅ Initialized collection %s", collection.Name())
 
-	if !exists {
-		_, err = client.DB.CreateCollection(ctx, "persons", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create persons collection: %v", err)
-		}
-		fmt.Printf("✅ Created persons collection\n")
+	service := &PersonService{
+		DBClient:   client,
+		Collection: collection,
 	}
-
 	return service, nil
 }
 
@@ -50,28 +45,18 @@ func (s *PersonService) GetPerson(ctx context.Context, req *geovision.GetPersonR
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Getting person with ID: %s", req.GetKey())
 
-	// Get persons collection
-	collection, err := s.DBClient.DB.Collection(ctx, "persons")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"id":    req.GetKey(),
-		}).Error("failed to get persons collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Read document from collection
 	var person model.Person
-	meta, err := collection.ReadDocument(ctx, req.GetKey(), &person)
+	meta, err := s.Collection.ReadDocument(ctx, req.GetKey(), &person)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("person not found")
 			return nil, status.Errorf(codes.NotFound, "Person not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to read person document")
@@ -88,21 +73,12 @@ func (s *PersonService) CreatePerson(ctx context.Context, req *geovision.CreateP
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Creating person")
 
-	// Get persons collection
-	collection, err := s.DBClient.DB.Collection(ctx, "persons")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-		}).Error("failed to get persons collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Create document in collection
 	var person model.Person
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &person)
-	meta, err := collection.CreateDocument(ctxWithReturnNew, req.GetPerson())
+	meta, err := s.Collection.CreateDocument(ctxWithReturnNew, req.GetPerson())
 	if err != nil {
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to create person document")
 		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
@@ -118,29 +94,19 @@ func (s *PersonService) UpdatePerson(ctx context.Context, req *geovision.UpdateP
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Updating person with Key: %s", req.GetPerson().GetKey())
 
-	// Get persons collection
-	collection, err := s.DBClient.DB.Collection(ctx, "persons")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetPerson().GetKey(),
-		}).Error("failed to get persons collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Update document in collection
 	var person model.Person
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &person)
-	meta, err := collection.UpdateDocument(ctxWithReturnNew, req.GetPerson().GetKey(), req.GetPerson())
+	meta, err := s.Collection.UpdateDocument(ctxWithReturnNew, req.GetPerson().GetKey(), req.GetPerson())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetPerson().GetKey(),
 			}).Info("person not found for update")
 			return nil, status.Errorf(codes.NotFound, "Person not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetPerson().GetKey(),
 		}).Error("failed to update person document")
@@ -157,27 +123,17 @@ func (s *PersonService) DeletePerson(ctx context.Context, req *geovision.DeleteP
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Deleting person with Key: %s", req.GetKey())
 
-	// Get persons collection
-	collection, err := s.DBClient.DB.Collection(ctx, "persons")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetKey(),
-		}).Error("failed to get persons collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Remove document from collection
-	_, err = collection.RemoveDocument(ctx, req.GetKey())
+	_, err := s.Collection.RemoveDocument(ctx, req.GetKey())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("person not found for deletion")
 			return nil, status.Errorf(codes.NotFound, "Person not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to delete person document")

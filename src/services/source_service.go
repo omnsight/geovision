@@ -9,6 +9,7 @@ import (
 	"github.com/bouncingmaxt/geovision/src/logging"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,29 +17,23 @@ import (
 type SourceService struct {
 	geovision.UnimplementedSourceServiceServer
 
-	DBClient *clients.ArangoDBClient
+	DBClient   *clients.ArangoDBClient
+	Collection driver.Collection
 }
 
 func NewSourceService(client *clients.ArangoDBClient) (*SourceService, error) {
-	service := &SourceService{
-		DBClient: client,
-	}
-
 	// Create sources collection
 	ctx := context.Background()
-	exists, err := client.DB.CollectionExists(ctx, "sources")
+	collection, err := client.GetCreateCollection(ctx, "sources", driver.CreateVertexCollectionOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to check sources collection existence: %v", err)
+		return nil, fmt.Errorf("failed to get or create sources collection: %v", err)
 	}
+	logrus.Infof("✅ Initialized collection %s", collection.Name())
 
-	if !exists {
-		_, err = client.DB.CreateCollection(ctx, "sources", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create sources collection: %v", err)
-		}
-		fmt.Printf("✅ Created sources collection\n")
+	service := &SourceService{
+		DBClient:   client,
+		Collection: collection,
 	}
-
 	return service, nil
 }
 
@@ -46,28 +41,18 @@ func (s *SourceService) GetSource(ctx context.Context, req *geovision.GetSourceR
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Getting source with ID: %s", req.GetKey())
 
-	// Get sources collection
-	collection, err := s.DBClient.DB.Collection(ctx, "sources")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"id":    req.GetKey(),
-		}).Error("failed to get sources collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Read document from collection
 	var source model.Source
-	meta, err := collection.ReadDocument(ctx, req.GetKey(), &source)
+	meta, err := s.Collection.ReadDocument(ctx, req.GetKey(), &source)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("source not found")
 			return nil, status.Errorf(codes.NotFound, "Source not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to read source document")
@@ -84,21 +69,12 @@ func (s *SourceService) CreateSource(ctx context.Context, req *geovision.CreateS
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Creating source with name: %s", req.GetSource().GetName())
 
-	// Get sources collection
-	collection, err := s.DBClient.DB.Collection(ctx, "sources")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-		}).Error("failed to get sources collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Create document in collection
 	var source model.Source
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &source)
-	meta, err := collection.CreateDocument(ctxWithReturnNew, req.GetSource())
+	meta, err := s.Collection.CreateDocument(ctxWithReturnNew, req.GetSource())
 	if err != nil {
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to create source document")
 		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
@@ -114,29 +90,19 @@ func (s *SourceService) UpdateSource(ctx context.Context, req *geovision.UpdateS
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Updating source with Key: %s", req.GetSource().GetKey())
 
-	// Get sources collection
-	collection, err := s.DBClient.DB.Collection(ctx, "sources")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetSource().GetKey(),
-		}).Error("failed to get sources collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Update document in collection
 	var source model.Source
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &source)
-	meta, err := collection.UpdateDocument(ctxWithReturnNew, req.GetSource().GetKey(), req.GetSource())
+	meta, err := s.Collection.UpdateDocument(ctxWithReturnNew, req.GetSource().GetKey(), req.GetSource())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetSource().GetKey(),
 			}).Info("source not found for update")
 			return nil, status.Errorf(codes.NotFound, "Source not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetSource().GetKey(),
 		}).Error("failed to update source document")
@@ -153,27 +119,17 @@ func (s *SourceService) DeleteSource(ctx context.Context, req *geovision.DeleteS
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Deleting source with Key: %s", req.GetKey())
 
-	// Get sources collection
-	collection, err := s.DBClient.DB.Collection(ctx, "sources")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetKey(),
-		}).Error("failed to get sources collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Remove document from collection
-	_, err = collection.RemoveDocument(ctx, req.GetKey())
+	_, err := s.Collection.RemoveDocument(ctx, req.GetKey())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("source not found for deletion")
 			return nil, status.Errorf(codes.NotFound, "Source not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to delete source document")

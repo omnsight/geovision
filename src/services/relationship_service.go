@@ -26,23 +26,6 @@ func NewRelationshipService(client *clients.ArangoDBClient) (*RelationshipServic
 		DBClient: client,
 	}
 
-	// Create relationships collection as an edge collection
-	ctx := context.Background()
-	exists, err := client.DB.CollectionExists(ctx, "relationships")
-	if err != nil {
-		return nil, fmt.Errorf("failed to check relationships collection existence: %v", err)
-	}
-
-	if !exists {
-		_, err = client.DB.CreateCollection(ctx, "relationships", &driver.CreateCollectionOptions{
-			Type: driver.CollectionTypeEdge,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to create relationships collection: %v", err)
-		}
-		fmt.Printf("✅ Created relationships collection as edge collection\n")
-	}
-
 	return service, nil
 }
 
@@ -84,40 +67,19 @@ func (s *RelationshipService) CreateRelationship(ctx context.Context, req *geovi
 	collectionName := fmt.Sprintf("%s_%s_%s", fromColl, relationName, toColl)
 
 	// Create the edge collection if it doesn't exist
-	exists, err := s.DBClient.DB.CollectionExists(ctx, collectionName)
+	collection, err := s.DBClient.GetCreateEdgeCollection(ctx, collectionName, driver.VertexConstraints{
+		From: []string{fromColl},
+		To:   []string{toColl},
+	}, driver.CreateEdgeCollectionOptions{})
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err,
 			"name":  collectionName,
-		}).Error("failed to check collection existence")
+		}).Errorf("failed to get or create collection %s", collectionName)
 		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
 	}
 
-	if !exists {
-		_, err = s.DBClient.DB.CreateCollection(ctx, collectionName, &driver.CreateCollectionOptions{
-			Type: driver.CollectionTypeEdge,
-		})
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"error": err,
-				"name":  collectionName,
-			}).Error("failed to create edge collection")
-			return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-		}
-		logger.Infof("✅ Created edge collection: %s", collectionName)
-	} else {
-		logger.Infof("Edge collection already exists: %s", collectionName)
-	}
-
-	// Get the specific edge collection
-	collection, err := s.DBClient.DB.Collection(ctx, collectionName)
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"error": err,
-			"name":  collectionName,
-		}).Error("failed to get edge collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
+	s.DBClient.OsintGraph.CreateVertexCollectionWithOptions(ctx, collection.Name(), driver.CreateVertexCollectionOptions{})
 
 	// Create document in collection
 	relationship.Id = ""
@@ -126,7 +88,7 @@ func (s *RelationshipService) CreateRelationship(ctx context.Context, req *geovi
 
 	var createdRelationship model.Relation
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &createdRelationship)
-	_, err = collection.CreateDocument(ctxWithReturnNew, relationship)
+	meta, err := collection.CreateDocument(ctxWithReturnNew, relationship)
 	if err != nil {
 		logger.WithFields(logrus.Fields{
 			"error": err,
@@ -135,6 +97,9 @@ func (s *RelationshipService) CreateRelationship(ctx context.Context, req *geovi
 		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
 	}
 
+	createdRelationship.Id = meta.ID.String()
+	createdRelationship.Key = meta.Key
+	createdRelationship.Rev = meta.Rev
 	return &geovision.CreateRelationshipResponse{Relationship: &createdRelationship}, nil
 }
 

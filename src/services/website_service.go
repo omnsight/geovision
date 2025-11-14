@@ -9,6 +9,7 @@ import (
 	"github.com/bouncingmaxt/geovision/src/logging"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -16,29 +17,23 @@ import (
 type WebsiteService struct {
 	geovision.UnimplementedWebsiteServiceServer
 
-	DBClient *clients.ArangoDBClient
+	DBClient   *clients.ArangoDBClient
+	Collection driver.Collection
 }
 
 func NewWebsiteService(client *clients.ArangoDBClient) (*WebsiteService, error) {
-	service := &WebsiteService{
-		DBClient: client,
-	}
-
 	// Create websites collection
 	ctx := context.Background()
-	exists, err := client.DB.CollectionExists(ctx, "websites")
+	collection, err := client.GetCreateCollection(ctx, "websites", driver.CreateVertexCollectionOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to check websites collection existence: %v", err)
+		return nil, fmt.Errorf("failed to get or create websites collection: %v", err)
 	}
+	logrus.Infof("✅ Initialized collection %s", collection.Name())
 
-	if !exists {
-		_, err = client.DB.CreateCollection(ctx, "websites", nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create websites collection: %v", err)
-		}
-		fmt.Printf("✅ Created websites collection\n")
+	service := &WebsiteService{
+		DBClient:   client,
+		Collection: collection,
 	}
-
 	return service, nil
 }
 
@@ -46,28 +41,18 @@ func (s *WebsiteService) GetWebsite(ctx context.Context, req *geovision.GetWebsi
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Getting website with ID: %s", req.GetKey())
 
-	// Get websites collection
-	collection, err := s.DBClient.DB.Collection(ctx, "websites")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"id":    req.GetKey(),
-		}).Error("failed to get websites collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Read document from collection
 	var website model.Website
-	meta, err := collection.ReadDocument(ctx, req.GetKey(), &website)
+	meta, err := s.Collection.ReadDocument(ctx, req.GetKey(), &website)
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("website not found")
 			return nil, status.Errorf(codes.NotFound, "Website not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to read website document")
@@ -84,21 +69,12 @@ func (s *WebsiteService) CreateWebsite(ctx context.Context, req *geovision.Creat
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Creating website with URL: %s", req.GetWebsite().GetUrl())
 
-	// Get websites collection
-	collection, err := s.DBClient.DB.Collection(ctx, "websites")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-		}).Error("failed to get websites collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Create document in collection
 	var website model.Website
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &website)
-	meta, err := collection.CreateDocument(ctxWithReturnNew, req.GetWebsite())
+	meta, err := s.Collection.CreateDocument(ctxWithReturnNew, req.GetWebsite())
 	if err != nil {
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 		}).Error("failed to create website document")
 		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
@@ -114,29 +90,19 @@ func (s *WebsiteService) UpdateWebsite(ctx context.Context, req *geovision.Updat
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Updating website with Key: %s", req.GetWebsite().GetKey())
 
-	// Get websites collection
-	collection, err := s.DBClient.DB.Collection(ctx, "websites")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetWebsite().GetKey(),
-		}).Error("failed to get websites collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Update document in collection
 	var website model.Website
 	ctxWithReturnNew := driver.WithReturnNew(ctx, &website)
-	meta, err := collection.UpdateDocument(ctxWithReturnNew, req.GetWebsite().GetKey(), req.GetWebsite())
+	meta, err := s.Collection.UpdateDocument(ctxWithReturnNew, req.GetWebsite().GetKey(), req.GetWebsite())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetWebsite().GetKey(),
 			}).Info("website not found for update")
 			return nil, status.Errorf(codes.NotFound, "Website not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetWebsite().GetKey(),
 		}).Error("failed to update website document")
@@ -153,27 +119,17 @@ func (s *WebsiteService) DeleteWebsite(ctx context.Context, req *geovision.Delet
 	logger := logging.GetLogger(ctx)
 	logger.Infof("Deleting website with Key: %s", req.GetKey())
 
-	// Get websites collection
-	collection, err := s.DBClient.DB.Collection(ctx, "websites")
-	if err != nil {
-		logger.WithFields(map[string]interface{}{
-			"error": err,
-			"key":   req.GetKey(),
-		}).Error("failed to get websites collection")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
 	// Remove document from collection
-	_, err = collection.RemoveDocument(ctx, req.GetKey())
+	_, err := s.Collection.RemoveDocument(ctx, req.GetKey())
 	if err != nil {
 		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(map[string]interface{}{
+			logger.WithFields(logrus.Fields{
 				"key": req.GetKey(),
 			}).Info("website not found for deletion")
 			return nil, status.Errorf(codes.NotFound, "Website not found")
 		}
 
-		logger.WithFields(map[string]interface{}{
+		logger.WithFields(logrus.Fields{
 			"error": err,
 			"key":   req.GetKey(),
 		}).Error("failed to delete website document")

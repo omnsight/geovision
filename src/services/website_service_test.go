@@ -16,7 +16,7 @@ import (
 func TestMain(m *testing.M) {
 	// Set environment variables for testing
 	os.Setenv("ARANGO_URL", "http://localhost:8529")
-	os.Setenv("ARANGO_DB", "geovision_test")
+	os.Setenv("ARANGO_DB", "geovision")
 	os.Setenv("ARANGO_USERNAME", "root")
 	os.Setenv("ARANGO_PASSWORD", "0123")
 

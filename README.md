@@ -31,6 +31,8 @@ go test -v ./... -run <test name>
 docker-compose down
 ```
 
+You can view arangodb dashboard at http://localhost:8529
+
 To run the service with ArangoDB using Docker Compose:
 
 ```bash

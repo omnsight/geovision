@@ -18,6 +18,7 @@ const loggerKey = contextKey("logger")
 func init() {
 	logrus.Info("Configuring global logger...")
 
+	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
