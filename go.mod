@@ -4,7 +4,7 @@ go 1.25.3
 
 require (
 	github.com/arangodb/go-driver v1.6.9
-	github.com/bouncingmaxt/omniscent-library v0.2.0-beta.2
+	github.com/bouncingmaxt/omniscent-library v1.0.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3

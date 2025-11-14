@@ -2,8 +2,8 @@ github.com/arangodb/go-driver v1.6.9 h1:zckB+xuA16NmHUuYOX7INCJTIyIkoBQjAGqNpiyf
 github.com/arangodb/go-driver v1.6.9/go.mod h1:eAM/drVZw39hTGFdkxvbVv0uJsDGFaUpqQHVZMSoALc=
 github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e h1:Xg+hGrY2LcQBbxd0ZFdbGSyRKTYMZCfBbw/pMJFOk1g=
 github.com/arangodb/go-velocypack v0.0.0-20200318135517-5af53c29c67e/go.mod h1:mq7Shfa/CaixoDxiyAAc5jZ6CVBAyPaNQCGS7mkj4Ho=
-github.com/bouncingmaxt/omniscent-library v0.2.0-beta.2 h1:M8MNCXaw6ANhU65a2+czir9RZ+uAEFuFALfvfa3lP6E=
-github.com/bouncingmaxt/omniscent-library v0.2.0-beta.2/go.mod h1:JKlBCSg3EnoFkhgtcCKFPzypiogwkhdAmm9LvEX5rv8=
+github.com/bouncingmaxt/omniscent-library v1.0.0 h1:3n5PWCfD46ZcoVatMvtgJ+wHPc6I+hUUTGCDD6nfeGI=
+github.com/bouncingmaxt/omniscent-library v1.0.0/go.mod h1:JKlBCSg3EnoFkhgtcCKFPzypiogwkhdAmm9LvEX5rv8=
 github.com/bytedance/gopkg v0.1.3 h1:TPBSwH8RsouGCBcMBktLt1AymVo2TVsBVCY4b6TnZ/M=
 github.com/bytedance/gopkg v0.1.3/go.mod h1:576VvJ+eJgyCzdjS+c4+77QF3p7ubbtiKARP3TxducM=
 github.com/bytedance/sonic v1.14.2 h1:k1twIoe97C1DtYUo+fZQy865IuHia4PR5RPiuGPPIIE=
