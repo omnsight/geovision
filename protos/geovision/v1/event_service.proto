@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package geovision.v1;
+
+import "google/api/annotations.proto";
+import "model/v1/osint.proto";
+import "model/v1/related.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/bouncingmaxt/omniscent-library/gen/go/geovision;geovision";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Geovision API"
+    version: "1.0.0"
+    description: "The Geovision API handles data for geovision uses."
+    contact: {
+      name: "Omni Team"
+      url: ""
+      email: ""
+    }
+    license: {
+      name: "Apache 2.0"
+      url: "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  }
+  // You can also set other top-level fields like schemes, host, etc.
+  schemes: [HTTPS]
+  consumes: "application/json"
+  produces: "application/json"
+};
+
+service GeoService {
+  rpc GetEvents(GetEventsRequest) returns (GetEventsResponse) {
+    option (google.api.http) = {get: "/v1/events"};
+  }
+
+  rpc GetEventRelatedEntities(GetEventRelatedEntitiesRequest) returns (GetEventRelatedEntitiesResponse) {
+    option (google.api.http) = {get: "/v1/events/{key}/related-entities"};
+  }
+}
+
+// Event messages
+message GetEventsRequest {
+  int64 start_time = 1;
+  int64 end_time = 2;
+}
+
+message GetEventsResponse {
+  repeated model.v1.Relation relations = 1;
+  repeated model.v1.Event events = 2;
+}
+
+message GetEventRequest {
+  string key = 1;
+}
+
+message GetEventResponse {
+  model.v1.Event event = 1;
+}
+
+message GetEventRelatedEntitiesRequest {
+  string key = 1;
+}
+
+message GetEventRelatedEntitiesResponse {
+  repeated model.v1.RelatedEntity entities = 1;
+}

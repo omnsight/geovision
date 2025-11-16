@@ -1,0 +1,538 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Geovision API",
+    "description": "The Geovision API handles data for geovision uses.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Omni Team"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "tags": [
+    {
+      "name": "GeoService"
+    }
+  ],
+  "schemes": [
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/events": {
+      "get": {
+        "operationId": "GeoService_GetEvents",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetEventsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "startTime",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "endTime",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          }
+        ],
+        "tags": [
+          "GeoService"
+        ]
+      }
+    },
+    "/v1/events/{key}/related-entities": {
+      "get": {
+        "operationId": "GeoService_GetEventRelatedEntities",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1GetEventRelatedEntitiesResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "GeoService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "v1Event": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "location": {
+          "$ref": "#/definitions/v1LocationData",
+          "title": "Main Data"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "happenedAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional"
+        }
+      }
+    },
+    "v1GetEventRelatedEntitiesResponse": {
+      "type": "object",
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1RelatedEntity"
+          }
+        }
+      }
+    },
+    "v1GetEventsResponse": {
+      "type": "object",
+      "properties": {
+        "relations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Relation"
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/v1Event"
+          }
+        }
+      }
+    },
+    "v1LocationData": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "format": "float"
+        },
+        "longitude": {
+          "type": "number",
+          "format": "float"
+        },
+        "countryCode": {
+          "type": "string"
+        },
+        "administrativeArea": {
+          "type": "string"
+        },
+        "subAdministrativeArea": {
+          "type": "string"
+        },
+        "locality": {
+          "type": "string"
+        },
+        "subLocality": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "postalCode": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "v1Organization": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "title": "Main Data"
+        },
+        "type": {
+          "type": "string"
+        },
+        "foundedAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "discoveredAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastVisited": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional"
+        }
+      }
+    },
+    "v1Person": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "title": "Main Data"
+        },
+        "role": {
+          "type": "string"
+        },
+        "nationality": {
+          "type": "string"
+        },
+        "birthDate": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1RelatedEntity": {
+      "type": "object",
+      "properties": {
+        "relation": {
+          "$ref": "#/definitions/v1Relation"
+        },
+        "source": {
+          "$ref": "#/definitions/v1Source"
+        },
+        "person": {
+          "$ref": "#/definitions/v1Person"
+        },
+        "organization": {
+          "$ref": "#/definitions/v1Organization"
+        },
+        "website": {
+          "$ref": "#/definitions/v1Website"
+        }
+      }
+    },
+    "v1Relation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "from": {
+          "type": "string",
+          "title": "@gotags: json:\"_from,omitempty\""
+        },
+        "to": {
+          "type": "string",
+          "title": "@gotags: json:\"_to,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "name": {
+          "type": "string",
+          "title": "Main Data"
+        },
+        "confidence": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/v1RelationValue"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "v1RelationValue": {
+      "type": "object",
+      "properties": {
+        "stringValue": {
+          "type": "string"
+        },
+        "intValue": {
+          "type": "string",
+          "format": "int64"
+        },
+        "doubleValue": {
+          "type": "number",
+          "format": "double"
+        },
+        "floatValue": {
+          "type": "number",
+          "format": "float"
+        },
+        "boolValue": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v1Source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "title": "Main Data"
+        },
+        "url": {
+          "type": "string"
+        },
+        "rootUrl": {
+          "type": "string"
+        },
+        "reliability": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "monitoring": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional"
+        }
+      }
+    },
+    "v1Website": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Common data\n@gotags: json:\"_id,omitempty\""
+        },
+        "key": {
+          "type": "string",
+          "title": "@gotags: json:\"_key,omitempty\""
+        },
+        "rev": {
+          "type": "string",
+          "title": "@gotags: json:\"_rev,omitempty\""
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "url": {
+          "type": "string",
+          "title": "Main Data"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "foundedAt": {
+          "type": "string",
+          "format": "int64",
+          "title": "Time data"
+        },
+        "discoveredAt": {
+          "type": "string",
+          "format": "int64"
+        },
+        "lastVisited": {
+          "type": "string",
+          "format": "int64"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "Additional"
+        }
+      }
+    }
+  }
+}

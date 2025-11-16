@@ -1,7 +1,7 @@
 services:
   arangodb:
     image: arangodb/arangodb:3.10
-    container_name: geovision_arangodb
+    container_name: test_arangodb
     environment:
       ARANGO_ROOT_PASSWORD: "0123"
     ports:
@@ -23,7 +23,7 @@ services:
       GRPC_PORT: 9090
       SERVER_PORT: 8080
       ARANGO_URL: http://arangodb:8529
-      ARANGO_DB: geovision
+      ARANGO_DB: test_db
       ARANGO_USERNAME: root
       ARANGO_PASSWORD: "0123"
     depends_on:

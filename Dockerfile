@@ -13,6 +13,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy source code, excluding test files
+COPY gen/ ./gen/
 COPY src/ ./src/
 
 # Build the application

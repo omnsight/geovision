@@ -21,7 +21,23 @@ The GeoVision service follows a three-layer architecture:
 
 Services are designed to be independent and follow the gRPC service definitions in the `idl/geovision` directory. Each service implements the `Unimplemented<ServiceName>Server` interface to ensure forward compatibility.
 
-## How to Run Locally
+## Run Locally
+
+### Buf Gen
+
+```bash
+buf registry login buf.build
+
+buf dep update
+
+buf format -w
+buf lint
+
+buf generate
+buf push
+
+go mod tidy
+```
 
 ### Run Unit Tests
 
@@ -33,6 +49,8 @@ docker-compose down
 
 You can view arangodb dashboard at http://localhost:8529
 
+### Run the Service
+
 To run the service with ArangoDB using Docker Compose:
 
 ```bash
@@ -41,13 +59,3 @@ docker-compose up -d
 docker-compose logs arangodb
 docker inspect
 ```
-
-## GitHub Actions
-
-The project includes a GitHub Actions workflow that:
-1. Sets up ArangoDB in a service container
-2. Runs all tests
-3. Builds the service
-4. Runs the service briefly to verify it starts correctly
-
-The workflow is defined in `.github/workflows/ci.yml`.

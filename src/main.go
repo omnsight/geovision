@@ -12,11 +12,11 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/bouncingmaxt/geovision/src/clients"
-	"github.com/bouncingmaxt/geovision/src/logging"
-	"github.com/bouncingmaxt/geovision/src/services"
-	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
 	gwRuntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/omnsight/geovision/gen/geovision/v1"
+	"github.com/omnsight/geovision/src/services"
+	"github.com/omnsight/omniscent-library/src/clients"
+	"github.com/omnsight/omniscent-library/src/logging"
 )
 
 func main() {
@@ -46,53 +46,13 @@ func main() {
 	}
 
 	// Register your business logic implementation with the gRPC server
-	eventService, err := services.NewEventService(client)
+	eventService, err := services.NewGeoService(client)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
 		}).Fatal("failed to create EventService")
 	}
-	geovision.RegisterEventServiceServer(gRPCServer, eventService)
-
-	personService, err := services.NewPersonService(client)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to create PersonService")
-	}
-	geovision.RegisterPersonServiceServer(gRPCServer, personService)
-
-	organizationService, err := services.NewOrganizationService(client)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to create OrganizationService")
-	}
-	geovision.RegisterOrganizationServiceServer(gRPCServer, organizationService)
-
-	sourceService, err := services.NewSourceService(client)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to create SourceService")
-	}
-	geovision.RegisterSourceServiceServer(gRPCServer, sourceService)
-
-	websiteService, err := services.NewWebsiteService(client)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to create WebsiteService")
-	}
-	geovision.RegisterWebsiteServiceServer(gRPCServer, websiteService)
-
-	relationshipService, err := services.NewRelationshipService(client)
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to create RelationshipService")
-	}
-	geovision.RegisterRelationshipServiceServer(gRPCServer, relationshipService)
+	geovision.RegisterGeoServiceServer(gRPCServer, eventService)
 
 	// Enable reflection for debugging
 	reflection.Register(gRPCServer)
@@ -124,40 +84,10 @@ func main() {
 	gwmux := gwRuntime.NewServeMux()
 
 	// Register all service handlers with the gateway's router
-	if err := geovision.RegisterEventServiceHandler(ctx, gwmux, conn); err != nil {
+	if err := geovision.RegisterGeoServiceHandler(ctx, gwmux, conn); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"error": err,
-		}).Fatal("failed to register EventService handler")
-	}
-
-	if err := geovision.RegisterPersonServiceHandler(ctx, gwmux, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to register PersonService handler")
-	}
-
-	if err := geovision.RegisterOrganizationServiceHandler(ctx, gwmux, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to register OrganizationService handler")
-	}
-
-	if err := geovision.RegisterSourceServiceHandler(ctx, gwmux, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to register SourceService handler")
-	}
-
-	if err := geovision.RegisterWebsiteServiceHandler(ctx, gwmux, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to register WebsiteService handler")
-	}
-
-	if err := geovision.RegisterRelationshipServiceHandler(ctx, gwmux, conn); err != nil {
-		logrus.WithFields(logrus.Fields{
-			"error": err,
-		}).Fatal("failed to register RelationshipService handler")
+		}).Fatal("failed to register GeoService handler")
 	}
 
 	// ---- 3. Start the Gin Server (the HTTP entrypoint) ----
