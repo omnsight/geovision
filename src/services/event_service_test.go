@@ -4,14 +4,16 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bouncingmaxt/geovision/src/clients"
-	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
-	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"github.com/omnsight/geovision/gen/geovision/v1"
+	"github.com/omnsight/omnibasement/gen/base/v1"
+	base_services "github.com/omnsight/omnibasement/src/services"
+	"github.com/omnsight/omniscent-library/gen/model/v1"
+	"github.com/omnsight/omniscent-library/src/clients"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func TestEventService(t *testing.T) {
+func TestGeoService(t *testing.T) {
 	// Skip test if ArangoDB is not available
 	if testing.Short() {
 		t.Skip("skipping test in short mode")
@@ -23,30 +25,36 @@ func TestEventService(t *testing.T) {
 		t.Skipf("Skipping test: failed to create ArangoDB client: %v", err)
 	}
 
-	// Create EventService
-	service, err := NewEventService(client)
+	// Create GeoService
+	service, err := NewGeoService(client)
 	if err != nil {
-		t.Fatalf("Failed to create EventService: %v", err)
+		t.Fatalf("Failed to create GeoService: %v", err)
 	}
 
 	if service == nil {
 		t.Error("Expected service to be created")
 	}
 
+	// Create base event service
+	eventService, err := base_services.NewEventService(client)
+	if err != nil {
+		t.Fatalf("Failed to create EventService: %v", err)
+	}
+
 	// Create PersonService
-	personService, err := NewPersonService(client)
+	personService, err := base_services.NewPersonService(client)
 	if err != nil {
 		t.Fatalf("Failed to create PersonService: %v", err)
 	}
 
 	// Create OrganizationService
-	orgService, err := NewOrganizationService(client)
+	orgService, err := base_services.NewOrganizationService(client)
 	if err != nil {
 		t.Fatalf("Failed to create OrganizationService: %v", err)
 	}
 
 	// Create RelationshipService
-	relationshipService, err := NewRelationshipService(client)
+	relationshipService, err := base_services.NewRelationshipService(client)
 	if err != nil {
 		t.Fatalf("Failed to create RelationshipService: %v", err)
 	}
@@ -107,7 +115,7 @@ func TestEventService(t *testing.T) {
 	// Test CRUD operations
 	t.Run("CRUD Operations", func(t *testing.T) {
 		// Create a person
-		createPersonReq := &geovision.CreatePersonRequest{
+		createPersonReq := &base.CreatePersonRequest{
 			Person: &model.Person{
 				Name: "Test Person",
 			},
@@ -127,7 +135,7 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Create an organization
-		createOrgReq := &geovision.CreateOrganizationRequest{
+		createOrgReq := &base.CreateOrganizationRequest{
 			Organization: &model.Organization{
 				Name: "Test Organization",
 			},
@@ -147,13 +155,13 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Create multiple events
-		createEvent1Req := &geovision.CreateEventRequest{
+		createEvent1Req := &base.CreateEventRequest{
 			Event: &model.Event{
 				HappenedAt: 1000,
 			},
 		}
 
-		createEvent1Resp, err := service.CreateEvent(context.Background(), createEvent1Req)
+		createEvent1Resp, err := eventService.CreateEvent(context.Background(), createEvent1Req)
 		if err != nil {
 			t.Fatalf("Failed to create event 1: %v", err)
 		}
@@ -171,13 +179,13 @@ func TestEventService(t *testing.T) {
 			t.Errorf("Expected event 1 happened_at to be 1000, got %d", createEvent1Resp.Event.HappenedAt)
 		}
 
-		createEvent2Req := &geovision.CreateEventRequest{
+		createEvent2Req := &base.CreateEventRequest{
 			Event: &model.Event{
 				HappenedAt: 2000,
 			},
 		}
 
-		createEvent2Resp, err := service.CreateEvent(context.Background(), createEvent2Req)
+		createEvent2Resp, err := eventService.CreateEvent(context.Background(), createEvent2Req)
 		if err != nil {
 			t.Fatalf("Failed to create event 2: %v", err)
 		}
@@ -197,7 +205,7 @@ func TestEventService(t *testing.T) {
 
 		// Create outbound relationships from events to organization
 		// This is what GetEventRelatedEntities looks for
-		createRel1Req := &geovision.CreateRelationshipRequest{
+		createRel1Req := &base.CreateRelationshipRequest{
 			Relationship: &model.Relation{
 				From: "events/" + createEvent1Resp.Event.Key,
 				To:   "organizations/" + createOrgResp.Organization.Key,
@@ -214,7 +222,7 @@ func TestEventService(t *testing.T) {
 			t.Fatal("Expected relationship 1 in create response")
 		}
 
-		createRel2Req := &geovision.CreateRelationshipRequest{
+		createRel2Req := &base.CreateRelationshipRequest{
 			Relationship: &model.Relation{
 				From: "events/" + createEvent2Resp.Event.Key,
 				To:   "organizations/" + createOrgResp.Organization.Key,
@@ -232,7 +240,7 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Create a relationship between the two events
-		createEventRelReq := &geovision.CreateRelationshipRequest{
+		createEventRelReq := &base.CreateRelationshipRequest{
 			Relationship: &model.Relation{
 				From: "events/" + createEvent1Resp.Event.Key,
 				To:   "events/" + createEvent2Resp.Event.Key,
@@ -305,7 +313,7 @@ func TestEventService(t *testing.T) {
 		event2Key := createEvent2Resp.Event.Key
 
 		// Delete the relationships
-		deleteRel1Req := &geovision.DeleteRelationshipRequest{
+		deleteRel1Req := &base.DeleteRelationshipRequest{
 			Id: createRel1Resp.Relationship.Id,
 		}
 
@@ -314,7 +322,7 @@ func TestEventService(t *testing.T) {
 			t.Fatalf("Failed to delete relationship 1: %v", err)
 		}
 
-		deleteRel2Req := &geovision.DeleteRelationshipRequest{
+		deleteRel2Req := &base.DeleteRelationshipRequest{
 			Id: createRel2Resp.Relationship.Id,
 		}
 
@@ -323,7 +331,7 @@ func TestEventService(t *testing.T) {
 			t.Fatalf("Failed to delete relationship 2: %v", err)
 		}
 
-		deleteEventRelReq := &geovision.DeleteRelationshipRequest{
+		deleteEventRelReq := &base.DeleteRelationshipRequest{
 			Id: createEventRelResp.Relationship.Id,
 		}
 
@@ -333,7 +341,7 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Delete the person
-		deletePersonReq := &geovision.DeletePersonRequest{
+		deletePersonReq := &base.DeletePersonRequest{
 			Key: createPersonResp.Person.Key,
 		}
 
@@ -343,7 +351,7 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Delete the organization
-		deleteOrgReq := &geovision.DeleteOrganizationRequest{
+		deleteOrgReq := &base.DeleteOrganizationRequest{
 			Key: createOrgResp.Organization.Key,
 		}
 
@@ -353,20 +361,20 @@ func TestEventService(t *testing.T) {
 		}
 
 		// Delete the events
-		deleteEvent1Req := &geovision.DeleteEventRequest{
+		deleteEvent1Req := &base.DeleteEventRequest{
 			Key: event1Key,
 		}
 
-		_, err = service.DeleteEvent(context.Background(), deleteEvent1Req)
+		_, err = eventService.DeleteEvent(context.Background(), deleteEvent1Req)
 		if err != nil {
 			t.Fatalf("Failed to delete event 1: %v", err)
 		}
 
-		deleteEvent2Req := &geovision.DeleteEventRequest{
+		deleteEvent2Req := &base.DeleteEventRequest{
 			Key: event2Key,
 		}
 
-		_, err = service.DeleteEvent(context.Background(), deleteEvent2Req)
+		_, err = eventService.DeleteEvent(context.Background(), deleteEvent2Req)
 		if err != nil {
 			t.Fatalf("Failed to delete event 2: %v", err)
 		}

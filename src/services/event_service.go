@@ -5,24 +5,24 @@ import (
 	"fmt"
 
 	"github.com/arangodb/go-driver"
-	"github.com/bouncingmaxt/geovision/src/clients"
-	"github.com/bouncingmaxt/geovision/src/helpers"
-	"github.com/bouncingmaxt/geovision/src/logging"
-	"github.com/bouncingmaxt/omniscent-library/gen/go/geovision"
-	"github.com/bouncingmaxt/omniscent-library/gen/go/model"
+	"github.com/omnsight/geovision/gen/geovision/v1"
+	"github.com/omnsight/omniscent-library/gen/model/v1"
+	"github.com/omnsight/omniscent-library/src/clients"
+	"github.com/omnsight/omniscent-library/src/helpers"
+	"github.com/omnsight/omniscent-library/src/logging"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type EventService struct {
-	geovision.UnimplementedEventServiceServer
+	geovision.UnimplementedGeoServiceServer
 
 	DBClient   *clients.ArangoDBClient
 	Collection driver.Collection
 }
 
-func NewEventService(client *clients.ArangoDBClient) (*EventService, error) {
+func NewGeoService(client *clients.ArangoDBClient) (*EventService, error) {
 	// Create events collection
 	ctx := context.Background()
 	collection, err := client.GetCreateCollection(ctx, "events", driver.CreateVertexCollectionOptions{})
@@ -40,34 +40,6 @@ func NewEventService(client *clients.ArangoDBClient) (*EventService, error) {
 		Collection: collection,
 	}
 	return service, nil
-}
-
-func (s *EventService) GetEvent(ctx context.Context, req *geovision.GetEventRequest) (*geovision.GetEventResponse, error) {
-	logger := logging.GetLogger(ctx)
-	logger.Infof("Getting event with ID: %s", req.GetKey())
-
-	// Read document from collection
-	var event model.Event
-	meta, err := s.Collection.ReadDocument(ctx, req.GetKey(), &event)
-	if err != nil {
-		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(logrus.Fields{
-				"key": req.GetKey(),
-			}).Info("event not found")
-			return nil, status.Errorf(codes.NotFound, "Event not found")
-		}
-
-		logger.WithFields(logrus.Fields{
-			"error": err,
-			"key":   req.GetKey(),
-		}).Error("failed to read event document")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
-	event.Id = meta.ID.String()
-	event.Key = meta.Key
-	event.Rev = meta.Rev
-	return &geovision.GetEventResponse{Event: &event}, nil
 }
 
 func (s *EventService) GetEvents(ctx context.Context, req *geovision.GetEventsRequest) (*geovision.GetEventsResponse, error) {
@@ -191,78 +163,4 @@ func (s *EventService) GetEventRelatedEntities(ctx context.Context, req *geovisi
 	}
 
 	return &geovision.GetEventRelatedEntitiesResponse{Entities: entities}, nil
-}
-
-func (s *EventService) CreateEvent(ctx context.Context, req *geovision.CreateEventRequest) (*geovision.CreateEventResponse, error) {
-	logger := logging.GetLogger(ctx)
-	logger.Infof("Creating event")
-
-	// Create document in collection
-	var event model.Event
-	ctxWithReturnNew := driver.WithReturnNew(ctx, &event)
-	meta, err := s.Collection.CreateDocument(ctxWithReturnNew, req.GetEvent())
-	if err != nil {
-		logger.WithFields(logrus.Fields{
-			"error": err,
-		}).Error("failed to create event document")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
-	event.Id = meta.ID.String()
-	event.Key = meta.Key
-	event.Rev = meta.Rev
-	return &geovision.CreateEventResponse{Event: &event}, nil
-}
-
-func (s *EventService) UpdateEvent(ctx context.Context, req *geovision.UpdateEventRequest) (*geovision.UpdateEventResponse, error) {
-	logger := logging.GetLogger(ctx)
-	logger.Infof("Updating event with Key: %s", req.GetEvent().GetKey())
-
-	// Update document in collection
-	var event model.Event
-	ctxWithReturnNew := driver.WithReturnNew(ctx, &event)
-	meta, err := s.Collection.UpdateDocument(ctxWithReturnNew, req.GetEvent().GetKey(), req.GetEvent())
-	if err != nil {
-		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(logrus.Fields{
-				"key": req.GetEvent().GetKey(),
-			}).Info("event not found for update")
-			return nil, status.Errorf(codes.NotFound, "Event not found")
-		}
-
-		logger.WithFields(logrus.Fields{
-			"error": err,
-			"key":   req.GetEvent().GetKey(),
-		}).Error("failed to update event document")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
-	event.Id = meta.ID.String()
-	event.Key = meta.Key
-	event.Rev = meta.Rev
-	return &geovision.UpdateEventResponse{Event: &event}, nil
-}
-
-func (s *EventService) DeleteEvent(ctx context.Context, req *geovision.DeleteEventRequest) (*geovision.DeleteEventResponse, error) {
-	logger := logging.GetLogger(ctx)
-	logger.Infof("Deleting event with Key: %s", req.GetKey())
-
-	// Remove document from collection
-	_, err := s.Collection.RemoveDocument(ctx, req.GetKey())
-	if err != nil {
-		if driver.IsNotFoundGeneral(err) {
-			logger.WithFields(logrus.Fields{
-				"key": req.GetKey(),
-			}).Info("event not found for deletion")
-			return nil, status.Errorf(codes.NotFound, "Event not found")
-		}
-
-		logger.WithFields(logrus.Fields{
-			"error": err,
-			"key":   req.GetKey(),
-		}).Error("failed to delete event document")
-		return nil, status.Errorf(codes.Internal, "Internal service error. Please try again later.")
-	}
-
-	return &geovision.DeleteEventResponse{}, nil
 }
