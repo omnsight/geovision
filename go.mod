@@ -6,8 +6,8 @@ require (
 	github.com/arangodb/go-driver v1.6.9
 	github.com/gin-gonic/gin v1.11.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.3
-	github.com/omnsight/omnibasement v1.0.1
-	github.com/omnsight/omniscent-library v1.5.0
+	github.com/omnsight/omnibasement v1.1.0
+	github.com/omnsight/omniscent-library v1.7.0
 	github.com/sirupsen/logrus v1.9.3
 	google.golang.org/genproto/googleapis/api v0.0.0-20251111163417-95abcf5c77ba
 	google.golang.org/grpc v1.76.0
