@@ -2,13 +2,11 @@ name: Generate Proto Code & Commit
 
 on:
   push:
-    branches:
-      - '**'
-      - '!main'
-      - '!pre-release'
+    branches-ignore:
+      - 'main'
 
 jobs:
-  generate-proto:
+  build:
     runs-on: ubuntu-latest
 
     permissions:
@@ -29,11 +27,41 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Download dependencies
+        run: go mod download
+
       - name: Injest Go Tags
         run: |
           buf generate
           go install github.com/favadi/protoc-go-inject-tag@latest
           find gen -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;
+
+      - name: Start services
+        run: |
+          docker compose up -d
+
+      - name: Run tests
+        run: |
+          go test -v ./...
+        env:
+          ARANGO_URL: http://localhost:8529
+          ARANGO_DB: test
+          ARANGO_USERNAME: root
+          ARANGO_PASSWORD: "0123"
+
+      - name: Build service
+        run: |
+          go build -o omnibasement ./src/main.go
+
+      - name: Show service logs
+        if: always()
+        run: |
+          docker compose logs
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down
 
       - name: Commit and push generated files
         uses: stefanzweifel/git-auto-commit-action@v5
