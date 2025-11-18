@@ -51,7 +51,7 @@ jobs:
 
       - name: Build service
         run: |
-          go build -o omnibasement ./src/main.go
+          go build -o geovision ./src/main.go
 
       - name: Show service logs
         if: always()
