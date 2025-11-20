@@ -16,25 +16,32 @@ import (
 	"github.com/omnsight/geovision/gen/geovision/v1"
 	"github.com/omnsight/geovision/src/services"
 	"github.com/omnsight/omniscent-library/src/clients"
+	"github.com/omnsight/omniscent-library/src/constants"
 	"github.com/omnsight/omniscent-library/src/logging"
+	"github.com/omnsight/omniscent-library/src/middleware"
 )
 
 func main() {
 	// ---- 1. Start the gRPC Server (your logic) ----
 	// Get gRPC address from environment variable or use default
-	grpcPort := os.Getenv("GRPC_PORT")
+	grpcPort := os.Getenv(constants.GrpcPort)
 	if grpcPort == "" {
-		logrus.Fatal("missing environment variable GRPC_PORT")
+		logrus.Fatalf("missing environment variable %s", constants.GrpcPort)
 	}
 
-	serverPort := os.Getenv("SERVER_PORT")
+	serverPort := os.Getenv(constants.ServerPort)
 	if serverPort == "" {
-		logrus.Fatal("missing environment variable SERVER_PORT")
+		logrus.Fatalf("missing environment variable %s", constants.ServerPort)
+	}
+
+	clientId := os.Getenv(clients.KeycloakClientID)
+	if clientId == "" {
+		logrus.Fatalf("missing environment variable %s", clients.KeycloakClientID)
 	}
 
 	// Create a gRPC server
 	gRPCServer := grpc.NewServer(
-		grpc.UnaryInterceptor(logging.LoggingInterceptor),
+		grpc.UnaryInterceptor(logging.LoggingInterceptor), grpc.UnaryInterceptor(middleware.GrpcGatewayIdentityInterceptor(clientId)),
 	)
 
 	// Create a new ArangoDB client
