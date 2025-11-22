@@ -32,8 +32,8 @@ jobs:
 
       - name: Injest Go Tags
         run: |
-          buf generate
           buf dep update
+          buf generate
           go install github.com/favadi/protoc-go-inject-tag@latest
           find gen -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;
 
@@ -67,7 +67,7 @@ jobs:
       - name: Commit and push generated files
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "auto: Refresh protobuf generated files in ./gen/"
+          commit_message: "auto: Refresh protobuf generated files in ./gen ./doc/"
           commit_options: '--no-verify'
-          file_pattern: 'gen/'
+          file_pattern: 'gen/ doc/'
           branch: ${{ github.ref_name }}

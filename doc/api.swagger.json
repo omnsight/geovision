@@ -140,8 +140,8 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
-        "visible": {
-          "type": "boolean"
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
         },
         "location": {
           "$ref": "#/definitions/v1LocationData",
@@ -252,8 +252,8 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
-        "visible": {
-          "type": "boolean"
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
         },
         "name": {
           "type": "string",
@@ -299,8 +299,8 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
-        "visible": {
-          "type": "boolean"
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
         },
         "name": {
           "type": "string",
@@ -379,6 +379,9 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
+        },
         "name": {
           "type": "string",
           "title": "Main Data"
@@ -427,6 +430,16 @@
         }
       }
     },
+    "v1Sensitivity": {
+      "type": "string",
+      "enum": [
+        "SENSITIVITY_PUBLIC_UNSPECIFIED",
+        "SENSITIVITY_PRIVILEGED",
+        "SENSITIVITY_COMMERCIAL",
+        "SENSITIVITY_CONFIDENTIAL"
+      ],
+      "default": "SENSITIVITY_PUBLIC_UNSPECIFIED"
+    },
     "v1Source": {
       "type": "object",
       "properties": {
@@ -442,8 +455,8 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
-        "visible": {
-          "type": "boolean"
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
         },
         "name": {
           "type": "string",
@@ -496,8 +509,8 @@
           "type": "string",
           "title": "@gotags: json:\"_rev,omitempty\""
         },
-        "visible": {
-          "type": "boolean"
+        "sensitivity": {
+          "$ref": "#/definitions/v1Sensitivity"
         },
         "url": {
           "type": "string",
