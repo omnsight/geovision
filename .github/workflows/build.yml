@@ -32,8 +32,8 @@ jobs:
 
       - name: Injest Go Tags
         run: |
-          buf generate
           buf dep update
+          buf generate
           go install github.com/favadi/protoc-go-inject-tag@latest
           find gen -name "*.pb.go" -exec protoc-go-inject-tag -input={} \;
 
